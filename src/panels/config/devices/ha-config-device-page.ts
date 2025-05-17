@@ -457,23 +457,61 @@ export class HaConfigDevicePage extends LitElement {
             ${this._related?.automation?.length
               ? html`
                   <div class="items">
-                    ${this._related.automation.map((automation) => {
-                      const entityState = this.hass.states[automation];
-                      return entityState
-                        ? html`<a
-                            href=${ifDefined(
-                              entityState.attributes.id
-                                ? `/config/automation/edit/${encodeURIComponent(entityState.attributes.id)}`
-                                : `/config/automation/show/${entityState.entity_id}`
-                            )}
-                          >
-                            <ha-list-item hasMeta .automation=${entityState}>
-                              ${computeStateName(entityState)}
-                              <ha-icon-next slot="meta"></ha-icon-next>
-                            </ha-list-item>
-                          </a>`
-                        : nothing;
-                    })}
+                    ${(() => {
+                      const automations = this._related!.automation
+                        .map((automation) => this.hass.states[automation])
+                        .filter((entityState): entityState is any => Boolean(entityState));
+                      
+                      const enabledAutomations = automations.filter((entityState) => entityState.state === "on");
+                      const disabledAutomations = automations.filter((entityState) => entityState.state === "off");
+
+                      return html`
+                        ${enabledAutomations.length > 0
+                          ? html`
+                              <h3 class="subheader">
+                                <span class="label enabled">Enabled</span>
+                                ${enabledAutomations.length} automation${enabledAutomations.length === 1 ? "" : "s"}
+                              </h3>
+                              ${enabledAutomations.map((entityState) => html`
+                                <a
+                                  href=${ifDefined(
+                                    entityState.attributes.id
+                                      ? `/config/automation/edit/${encodeURIComponent(entityState.attributes.id)}`
+                                      : `/config/automation/show/${entityState.entity_id}`
+                                  )}
+                                >
+                                  <ha-list-item hasMeta .automation=${entityState}>
+                                    ${computeStateName(entityState)}
+                                    <ha-icon-next slot="meta"></ha-icon-next>
+                                  </ha-list-item>
+                                </a>
+                              `)}
+                            `
+                          : ""}
+                        ${disabledAutomations.length > 0
+                          ? html`
+                              <h3 class="subheader">
+                                <span class="label disabled">Disabled</span>
+                                ${disabledAutomations.length} automation${disabledAutomations.length === 1 ? "" : "s"}
+                              </h3>
+                              ${disabledAutomations.map((entityState) => html`
+                                <a
+                                  href=${ifDefined(
+                                    entityState.attributes.id
+                                      ? `/config/automation/edit/${encodeURIComponent(entityState.attributes.id)}`
+                                      : `/config/automation/show/${entityState.entity_id}`
+                                  )}
+                                >
+                                  <ha-list-item hasMeta .automation=${entityState}>
+                                    ${computeStateName(entityState)}
+                                    <ha-icon-next slot="meta"></ha-icon-next>
+                                  </ha-list-item>
+                                </a>
+                              `)}
+                            `
+                          : ""}
+                      `;
+                    })()}
                   </div>
                 `
               : html`
@@ -1658,7 +1696,7 @@ export class HaConfigDevicePage extends LitElement {
         }
 
         .items {
-          padding-bottom: 16px;
+          padding: 0 8px 16px 8px;
         }
 
         ha-card:has(ha-logbook) {
@@ -1676,6 +1714,40 @@ export class HaConfigDevicePage extends LitElement {
           display: flex;
           justify-content: space-between;
           align-items: center;
+        }
+
+        .label {
+          font-size: 0.875rem;
+          margin-right: 8px;
+          padding: 0.1rem 0.5rem;
+          border-radius: 0.25rem;
+        }
+
+        .label.enabled {
+          color: var(--success-color);
+          background: var(--success-color-background, rgba(75, 181, 67, 0.1));
+        }
+
+        .label.disabled {
+          color: var(--warning-color);
+          background: var(--warning-color-background, rgba(255, 152, 0, 0.1));
+        }
+
+        .subheader {
+          display: flex;
+          align-items: center;
+          font-family: var(--ha-font-family-body);
+          font-size: var(--ha-font-size-lg);
+          color: var(--secondary-text-color);
+          font-weight: var(--ha-font-weight-normal);
+          border-bottom: 1px solid var(--divider-color);
+          padding: 0 8px 8px 8px;
+          margin: 20px 0px 8px 0px;
+          gap: 8px;
+        }
+
+        .subheader:first-child {
+          margin-top: 8px;
         }
       `,
     ];
